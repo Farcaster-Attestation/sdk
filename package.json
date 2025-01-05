@@ -40,7 +40,6 @@
   "dependencies": {
     "@farcaster/core": "^0.15.6",
     "axios": "^1.7.9",
-    "keccak256": "^1.0.6",
     "viem": "^2.22.2"
   }
 }
