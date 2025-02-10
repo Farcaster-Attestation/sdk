@@ -33,9 +33,9 @@ async function run() {
     fid: 328679n,
     walletAddress: verifyingWallet,
     walletClient,
-    publicClient,
+    publicClient: publicClientBase,
     onVerificationAttesting: () => {
-      console.log("Starting attestation on Optimism...");
+      console.log("Starting attestation on Base...");
     },
   });
 
@@ -49,9 +49,9 @@ async function run() {
   const isVerified = await checkFarcasterVerificationOnResolver(
     328679n,
     verifyingWallet,
-    publicClient
+    publicClientBase
   );
-  console.log("Is verified on Optimism:", isVerified);
+  console.log("Is verified on Base:", isVerified);
 }
 
 run().catch((err) => {
