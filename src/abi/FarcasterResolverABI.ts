@@ -78,6 +78,11 @@ export default [
     type: "error",
   },
   {
+    inputs: [],
+    name: "SignatureAlreadyUsed",
+    type: "error",
+  },
+  {
     anonymous: false,
     inputs: [
       {
@@ -1078,6 +1083,40 @@ export default [
   {
     inputs: [
       {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "fid",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes32",
+        name: "publicKey",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
+    name: "signatureHash",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bytes4",
         name: "interfaceId",
         type: "bytes4",
@@ -1144,9 +1183,9 @@ export default [
     name: "verifyAdd",
     outputs: [
       {
-        internalType: "bool",
+        internalType: "uint256",
         name: "",
-        type: "bool",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -1183,9 +1222,9 @@ export default [
     name: "verifyRemove",
     outputs: [
       {
-        internalType: "bool",
+        internalType: "uint256",
         name: "",
-        type: "bool",
+        type: "uint256",
       },
     ],
     stateMutability: "view",

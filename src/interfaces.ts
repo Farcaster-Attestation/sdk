@@ -21,7 +21,7 @@ export interface FarcasterVerificationMessage {
       address: `0x${string}`;
       claimSignature: string;
       blockHash: `0x${string}`;
-      verificationType: number;
+      type: number;
       chainId: number;
       protocol: string;
       ethSignature: string;

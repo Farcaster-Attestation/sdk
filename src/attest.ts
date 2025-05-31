@@ -114,6 +114,30 @@ export async function farcasterAttest<C extends Chain>(
     await onVerificationAttesting();
   }
 
+  /*
+  {
+    "data":{
+      "type":"MESSAGE_TYPE_VERIFICATION_ADD_ETH_ADDRESS",
+      "fid":328679,
+      "timestamp":110966760,
+      "network":"FARCASTER_NETWORK_MAINNET",
+      "verificationAddAddressBody":{
+        "address":"0x5f4bcccb5c2cbb01c619f5cfed555466e31679b6",
+        "claimSignature":"d5QNIGmRKARAiG8p8PdQL56rWJoQyCWmtavzcFUG9R5vL4yv3ji0auT8KZb3gPD76v7Q4hXQo3Ee6NGnf8kfdRw=",
+        "blockHash":"0xb5af0f1626171b2624b93eb2e9192e88dba950dc8d3881a62e514b239fa12bb4",
+        "type":0,
+        "chainId":0,
+        "protocol":"PROTOCOL_ETHEREUM"
+      }
+    },
+    "hash":"0x75c483fa367ba1e53adbd9cec101d204560bb019",
+    "hashScheme":"HASH_SCHEME_BLAKE3",
+    "signature":"oLV+KYAcrN3ymsfNRQ62NIbKswT1Dq9F+wCzsbmxTb9KD7FOGBbbch2OJrgGl/Es/83AzHp2O/VWUC1vtOz2Dg==",
+    "signatureScheme":"SIGNATURE_SCHEME_ED25519",
+    "signer":"0xbb77ee11e6651a87e4537d80eca20ee9036b0260eb77150065b2c02148f9603a"
+  }
+  */
+
   const transformedData = {
     type: MessageType.VERIFICATION_ADD_ETH_ADDRESS,
     fid: Number(verificationData.data.fid),
@@ -121,18 +145,17 @@ export async function farcasterAttest<C extends Chain>(
     network: FarcasterNetwork.MAINNET,
     verificationAddAddressBody: {
       address: toBytes(
-        verificationData.data.verificationAddEthAddressBody.address
+        verificationData.data.verificationAddAddressBody.address
       ),
       claimSignature: Buffer.from(
-        verificationData.data.verificationAddEthAddressBody.claimSignature,
+        verificationData.data.verificationAddAddressBody.claimSignature,
         "base64"
       ),
       blockHash: toBytes(
-        verificationData.data.verificationAddEthAddressBody.blockHash
+        verificationData.data.verificationAddAddressBody.blockHash
       ),
-      verificationType:
-        verificationData.data.verificationAddEthAddressBody.verificationType,
-      chainId: verificationData.data.verificationAddEthAddressBody.chainId,
+      verificationType: verificationData.data.verificationAddAddressBody.type,
+      chainId: verificationData.data.verificationAddAddressBody.chainId,
       protocol: Protocol.ETHEREUM,
     },
   };

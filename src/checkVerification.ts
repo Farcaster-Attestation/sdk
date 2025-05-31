@@ -1,5 +1,4 @@
 import { Chain, getAddress, PublicClient, Transport } from "viem";
-import { optimism } from "viem/chains";
 import axios from "axios";
 import FarcasterResolverInteropABI from "./abi/FarcasterResolverInteropABI";
 import {
@@ -10,6 +9,20 @@ import {
   DEFAULT_PUBLIC_CLIENT,
   DEFAULT_RESOLVER_INTEROP_ADDRESS,
 } from "./const";
+
+export async function getFarcasterVerificationAttestationUid<C extends Chain>(
+  fid: bigint,
+  walletAddress: `0x${string}`,
+  publicClient: PublicClient<Transport, C> = DEFAULT_PUBLIC_CLIENT as any,
+  resolverAddress: `0x${string}` = DEFAULT_RESOLVER_INTEROP_ADDRESS
+) {
+  return publicClient.readContract({
+    address: resolverAddress,
+    abi: FarcasterResolverInteropABI,
+    functionName: "getAttestationUid",
+    args: [fid, walletAddress],
+  });
+}
 
 /**
  * Get verification messages for the given wallet address from the Farcaster Hub.
@@ -28,7 +41,7 @@ export async function checkFarcasterVerificationOnHub(
   const normalizedAddr = getAddress(walletAddress); // EIP-55 normalization
 
   const { data } = await axios.get<FarcasterVerificationResponse>(
-    `https://nemes.farcaster.xyz:2281/v1/verificationsByFid?fid=${fid}&pageSize=100`
+    `https://farcaster-attestation.upnode.org/v1/verificationsByFid?fid=${fid}&pageSize=100`
   );
 
   const messages = data?.messages ?? [];
@@ -42,7 +55,7 @@ export async function checkFarcasterVerificationOnHub(
 
   while (!matchingMessage && nextPageToken) {
     const { data: nextData } = await axios.get<FarcasterVerificationResponse>(
-      `https://nemes.farcaster.xyz:2281/v1/verificationsByFid?fid=${fid}&pageSize=100&pageToken=${nextPageToken}`
+      `https://farcaster-attestation.upnode.org/v1/verificationsByFid?fid=${fid}&pageSize=100&pageToken=${nextPageToken}`
     );
 
     matchingMessage = nextData.messages?.find((msg) => {
