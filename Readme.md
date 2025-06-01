@@ -18,97 +18,52 @@ Below is an example of how to use the SDK to perform wallet verification and att
 import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
-import { checkFarcasterVerificationOnResolver, farcasterAttest } from "@farcaster-attestation/sdk";
+import { checkFarcasterVerificationOnResolver, farcasterAttest } from "../src";
 
 async function run() {
-  const verifyingWallet = "0xf01Dd015Bc442d872275A79b9caE84A6ff9B2A27";
-  const fid = 328679n;
+  const verifyingWallet = "0xb92c8a7096d15795f310c04817eceb1ff86c63db";
+  const fid = 928679n;
 
-  // Create wallet client from private key (Using test junk private key)
-  const account = privateKeyToAccount(
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-  );
+  // Create wallet client from private key
+  const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 
   const walletClient = createWalletClient({
     account,
     chain: optimism,
-    transport: http("http://127.0.0.1:9545"),
+    transport: http(),
   });
 
-  // Create public clients
+  // Create public client
   const publicClient = createPublicClient({
     chain: optimism,
-    transport: http("http://127.0.0.1:9545"),
+    transport: http(),
   });
 
-  const publicClientBase = createPublicClient({
-    chain: base,
-    transport: http("http://127.0.0.1:9546"),
+  // Call farcasterAttest with FID 328679
+  const hash = await farcasterAttest({
+    fid,
+    walletAddress: verifyingWallet,
+    walletClient,
+    publicClient,
+    onVerificationAttesting: () => {
+      console.log("Starting attestation on Optimism...");
+    },
   });
 
-  {
-    // Call farcasterAttest with FID 328679 on Optimism
-    const hash = await farcasterAttest({
-      fid,
-      walletAddress: verifyingWallet,
-      walletClient,
-      publicClient,
-      onVerificationAttesting: () => {
-        console.log("Starting attestation on Optimism...");
-      },
-    });
-
-    if (hash) {
-      console.log("Attestation successful! Hash:", hash);
-    } else {
-      console.log("Already verified on resolver");
-    }
-
-    // Check verification status on Optimism
-    const isVerified = await checkFarcasterVerificationOnResolver(
-      fid,
-      verifyingWallet,
-      publicClient
-    );
-    console.log("Is verified on Optimism:", isVerified);
-
-    console.log("================================================");
+  if (hash) {
+    console.log("Attestation successful! Hash:", hash);
+  } else {
+    console.log("Already verified on resolver");
   }
 
-  {
-    // Call farcasterAttest with FID 328679 on Base
-    const hash = await farcasterAttest({
-      fid,
-      walletAddress: verifyingWallet,
-      walletClient,
-      publicClient: publicClientBase,
-      onVerificationAttesting: () => {
-        console.log("Starting attestation on Base...");
-      },
-    });
-
-    if (hash) {
-      console.log("Attestation successful! Hash:", hash);
-    } else {
-      console.log("Already verified on resolver");
-    }
-
-    // Check verification status on Base
-    const isVerified = await checkFarcasterVerificationOnResolver(
-      fid,
-      verifyingWallet,
-      publicClientBase
-    );
-    console.log("Is verified on Base:", isVerified);
-
-    console.log("================================================");
-  }
+  // checkFarcasterVerificationOnResolver
+  const isVerified = await checkFarcasterVerificationOnResolver(
+    fid,
+    verifyingWallet,
+    publicClient
+  );
+  console.log("Is verified on Optimism:", isVerified);
 }
-
-run().catch((err) => {
-  console.trace(err);
-  process.exit(1);
-});
 ```
 
 This example demonstrates how to:

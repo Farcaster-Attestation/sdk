@@ -4,7 +4,8 @@ import { base, optimism } from "viem/chains";
 import { checkFarcasterVerificationOnResolver, farcasterAttest } from "../src";
 
 async function run() {
-  const verifyingWallet = "0xf01Dd015Bc442d872275A79b9caE84A6ff9B2A27";
+  const verifyingWallet = "0xb92c8a7096d15795f310c04817eceb1ff86c63db";
+  const fid = 928679n;
 
   // Create wallet client from private key
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
@@ -23,7 +24,7 @@ async function run() {
 
   // Call farcasterAttest with FID 328679
   const hash = await farcasterAttest({
-    fid: 328679n,
+    fid,
     walletAddress: verifyingWallet,
     walletClient,
     publicClient,
@@ -40,7 +41,7 @@ async function run() {
 
   // checkFarcasterVerificationOnResolver
   const isVerified = await checkFarcasterVerificationOnResolver(
-    328679n,
+    fid,
     verifyingWallet,
     publicClient
   );

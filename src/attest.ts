@@ -26,6 +26,7 @@ import {
 } from "@farcaster/core";
 import { optimism } from "viem/chains";
 import FarcasterResolverInteropABI from "./abi/FarcasterResolverInteropABI";
+import axios from "axios";
 
 /**
  * Build the `bytes memory signature` argument for the FarcasterResolver `attest` function,
@@ -83,6 +84,7 @@ export async function farcasterAttest<C extends Chain>(
     onVerificationAttesting,
     resolverAddress = DEFAULT_RESOLVER_ADDRESS,
     resolverInteropAddress = DEFAULT_RESOLVER_INTEROP_ADDRESS,
+    skipGasSupport = false,
   } = options;
 
   // Get the wallet address from the client
@@ -171,53 +173,74 @@ export async function farcasterAttest<C extends Chain>(
   const chainId = await publicClient.getChainId();
 
   if (chainId === optimism.id) {
-    // Create contract instance
-    const resolver = getContract({
-      address: resolverAddress,
-      abi: FarcasterResolverABI,
-      client: walletClient,
-    });
+    if (!skipGasSupport) {
+      try {
+        await axios.post(
+          "https://farcaster-attestation.upnode.org/submitVerification",
+          {
+            fid: Number(fid),
+            walletAddress: address,
+          }
+        );
+      } catch (error) {}
+    }
 
-    // Call attest function
-    const hash = await resolver.write.attest(
-      [
-        verificationData.data.verificationAddAddressBody.address,
-        fid,
-        verificationData.signer,
-        1n,
-        signatureParam,
-      ],
-      {
-        account: walletClient.account ?? null,
-        chain: optimism,
-      }
+    const verifiedOnResolver = await checkFarcasterVerificationOnResolver(
+      fid,
+      address,
+      publicClient,
+      resolverInteropAddress
     );
 
-    await publicClient.waitForTransactionReceipt({ hash });
+    if (!verifiedOnResolver) {
+      // Create contract instance
+      const resolver = getContract({
+        address: resolverAddress,
+        abi: FarcasterResolverABI,
+        client: walletClient,
+      });
 
-    // while resolver is not verified, wait 0.5 second max 10 seconds
-    let isVerified = false;
-    for (let i = 0; i < 20; i++) {
-      let verifiedOnResolver = await checkFarcasterVerificationOnResolver(
-        fid,
-        address,
-        publicClient,
-        resolverInteropAddress
+      // Call attest function
+      const hash = await resolver.write.attest(
+        [
+          verificationData.data.verificationAddAddressBody.address,
+          fid,
+          verificationData.signer,
+          1n,
+          signatureParam,
+        ],
+        {
+          account: walletClient.account ?? null,
+          chain: optimism,
+        }
       );
 
-      if (verifiedOnResolver) {
-        isVerified = true;
-        break;
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // while resolver is not verified, wait 0.5 second max 10 seconds
+      let isVerified = false;
+      for (let i = 0; i < 20; i++) {
+        let verifiedOnResolver = await checkFarcasterVerificationOnResolver(
+          fid,
+          address,
+          publicClient,
+          resolverInteropAddress
+        );
+
+        if (verifiedOnResolver) {
+          isVerified = true;
+          break;
+        }
+
+        await wait(500);
       }
 
-      await wait(500);
-    }
+      if (!isVerified) {
+        throw new Error("Timed out waiting for verification on resolver");
+      }
 
-    if (!isVerified) {
-      throw new Error("Timed out waiting for verification on resolver");
+      return hash;
     }
-
-    return hash;
   } else {
     // Attest on optimism first
     await farcasterAttest({

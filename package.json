@@ -1,6 +1,6 @@
 {
   "name": "@farcaster-attestation/sdk",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "An SDK for onchain Farcaster wallet verification and attestation",
   "main": "dist/index.js",
   "module": "dist/index.js",

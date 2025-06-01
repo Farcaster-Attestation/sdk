@@ -9,6 +9,7 @@ export interface FarcasterAttestOptions<C extends Chain> {
   onVerificationAttesting?(): any;
   resolverAddress?: `0x${string}`;
   resolverInteropAddress?: `0x${string}`;
+  skipGasSupport?: boolean;
 }
 
 export interface FarcasterVerificationMessage {
