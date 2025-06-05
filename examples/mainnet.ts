@@ -2,10 +2,26 @@ import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { checkFarcasterVerificationOnResolver, farcasterAttest } from "../src";
+import * as readline from "readline";
+import { VerificationNotFoundError } from "../src/error";
+
+// Create readline interface
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Promisify readline question
+const question = (query: string) =>
+  new Promise((resolve) => rl.question(query, resolve));
 
 async function run() {
-  const verifyingWallet = "0xb92c8a7096d15795f310c04817eceb1ff86c63db";
-  const fid = 928679n;
+  // Get wallet and fid from user input
+  const verifyingWallet = (await question(
+    "Enter wallet address (0x...): "
+  )) as `0x${string}`;
+  const fidInput = (await question("Enter Farcaster ID: ")) as string;
+  const fid = BigInt(fidInput);
 
   // Create wallet client from private key
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
@@ -22,22 +38,35 @@ async function run() {
     transport: http(),
   });
 
-  // Call farcasterAttest with FID 328679
-  const hash = await farcasterAttest({
-    fid,
-    walletAddress: verifyingWallet,
-    walletClient,
-    publicClient,
-    onVerificationAttesting: () => {
-      console.log("Starting attestation on Optimism...");
-    },
-  });
+  // Call farcasterAttest with input FID
+  try {
+    const hash = await farcasterAttest({
+      fid,
+      walletAddress: verifyingWallet,
+      walletClient,
+      publicClient,
+      onVerificationAttesting: () => {
+        console.log("Starting attestation on Optimism...");
+      },
+    });
 
-  if (hash) {
-    console.log("Attestation successful! Hash:", hash);
-  } else {
-    console.log("Already verified on resolver");
+    if (hash) {
+      console.log("Wallet verified successfully! Hash:", hash);
+    } else {
+      console.log("Already verified on resolver");
+    }
+  } catch (error) {
+    if (error instanceof VerificationNotFoundError) {
+      console.log("Verification not found on the Farcaster Hub");
+      rl.close();
+      return;
+    } else {
+      throw error;
+    }
   }
+
+  // TODO: Attest your message on EAS as usual
+  console.log("TODO: Attest your message on EAS as usual");
 
   // checkFarcasterVerificationOnResolver
   const isVerified = await checkFarcasterVerificationOnResolver(
@@ -46,6 +75,9 @@ async function run() {
     publicClient
   );
   console.log("Is verified on Optimism:", isVerified);
+
+  // Close readline interface
+  rl.close();
 }
 
 run().catch((err) => {

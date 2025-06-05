@@ -10,6 +10,8 @@ import {
   DEFAULT_RESOLVER_INTEROP_ADDRESS,
 } from "./const";
 
+const HUB_URL = "https://farcaster-attestation.upnode.org";
+
 export async function getFarcasterVerificationAttestationUid<C extends Chain>(
   fid: bigint,
   walletAddress: `0x${string}`,
@@ -41,7 +43,7 @@ export async function checkFarcasterVerificationOnHub(
   const normalizedAddr = getAddress(walletAddress); // EIP-55 normalization
 
   const { data } = await axios.get<FarcasterVerificationResponse>(
-    `https://farcaster-attestation.upnode.org/v1/verificationsByFid?fid=${fid}&pageSize=100`
+    `${HUB_URL}/v1/verificationsByFid?fid=${fid}&pageSize=100`
   );
 
   const messages = data?.messages ?? [];
@@ -49,13 +51,23 @@ export async function checkFarcasterVerificationOnHub(
   // Keep querying pages until we find a match or run out of pages
   let nextPageToken = data.nextPageToken;
   let matchingMessage = messages.find((msg: any) => {
+    if (
+      msg?.data?.verificationAddAddressBody.protocol !== "PROTOCOL_ETHEREUM"
+    ) {
+      return false;
+    }
+
+    if (msg?.data?.verificationAddAddressBody.chainId !== 0) {
+      return false;
+    }
+
     const addr = msg?.data?.verificationAddAddressBody?.address;
     return addr && getAddress(addr) === normalizedAddr;
   });
 
   while (!matchingMessage && nextPageToken) {
     const { data: nextData } = await axios.get<FarcasterVerificationResponse>(
-      `https://farcaster-attestation.upnode.org/v1/verificationsByFid?fid=${fid}&pageSize=100&pageToken=${nextPageToken}`
+      `${HUB_URL}/v1/verificationsByFid?fid=${fid}&pageSize=100&pageToken=${nextPageToken}`
     );
 
     matchingMessage = nextData.messages?.find((msg) => {

@@ -9,6 +9,7 @@ import {
 import { toHexString, wait } from "./utils";
 import {
   checkFarcasterVerification,
+  checkFarcasterVerificationOnHub,
   checkFarcasterVerificationOnResolver,
 } from "./checkVerification";
 import { FarcasterAttestOptions } from "./interfaces";
@@ -27,6 +28,7 @@ import {
 import { optimism } from "viem/chains";
 import FarcasterResolverInteropABI from "./abi/FarcasterResolverInteropABI";
 import axios from "axios";
+import { VerificationNotFoundError } from "./error";
 
 /**
  * Build the `bytes memory signature` argument for the FarcasterResolver `attest` function,
@@ -92,23 +94,27 @@ export async function farcasterAttest<C extends Chain>(
     ? [walletAddress]
     : await walletClient.getAddresses();
 
-  // Check verification status on both hub and resolver
-  const { verifiedOnResolver, verificationData } =
-    await checkFarcasterVerification(
-      fid,
-      address,
-      publicClient,
-      resolverInteropAddress
-    );
-
-  // If not verified on hub, throw error regardless of resolver status
-  if (!verificationData) {
-    throw new Error("No verification found on Farcaster Hub");
-  }
+  // Check verification status on resolver first
+  const verifiedOnResolver = await checkFarcasterVerificationOnResolver(
+    fid,
+    address,
+    publicClient,
+    resolverInteropAddress
+  );
 
   // If already verified on resolver, skip attestation
   if (verifiedOnResolver) {
     return null;
+  }
+
+  // Check verification status on hub
+  const verificationData = await checkFarcasterVerificationOnHub(fid, address);
+
+  // If not verified on hub, throw error
+  if (!verificationData) {
+    throw new VerificationNotFoundError(
+      "Verification not found on the Farcaster Hub"
+    );
   }
 
   // Notify start of attestation if callback provided
@@ -175,13 +181,17 @@ export async function farcasterAttest<C extends Chain>(
   if (chainId === optimism.id) {
     if (!skipGasSupport) {
       try {
-        await axios.post(
+        const response = await axios.post(
           "https://farcaster-attestation.upnode.org/submitVerification",
           {
             fid: Number(fid),
             walletAddress: address,
           }
         );
+
+        if (response.data?.hash) {
+          return response.data.hash;
+        }
       } catch (error) {}
     }
 
